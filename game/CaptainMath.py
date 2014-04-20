@@ -46,6 +46,9 @@ CorrectAnswersList = list()
 WrongAnswersList = list()
 isSpaceShipSoundNeeded = False
 currentLevel = 1
+currentPlanet = 1
+isTransportSoundNeeded = False
+isGameEnd = False
 class font(spyral.Sprite):
     def __init__(self, scene, font, text):
         spyral.Sprite.__init__(self, scene)
@@ -131,7 +134,14 @@ class Player(spyral.Sprite):
             self.image = spyral.image.Image(filename =
             "images/mainPlayerRedImages/RedPlayerShootingLaserLeftForceField.png",
              size = None)
-
+        if self.moving == 'left':
+            global ProwNum
+        global PcolNum
+            #self.x -= paddle_velocity * delta
+        if (BoardStatus[ProwNum][PcolNum] != -1):
+            if (PcolNum != 0):
+                    PcolNum-=1
+        self.x = BoardXcoord[ProwNum][PcolNum]
     def move_right(self):
         global isface
         isface = "right"
@@ -144,6 +154,13 @@ class Player(spyral.Sprite):
             self.image = spyral.image.Image(filename =
             "images/mainPlayerRedImages/RedPlayerShootingLaserRightForceField.png",
             size = None)
+        if self.moving == 'right':
+            global ProwNum
+        global PcolNum
+        if (BoardStatus[ProwNum][PcolNum] != -1):
+            if (PcolNum != 5):
+                    PcolNum+=1
+        self.x = BoardXcoord[ProwNum][PcolNum]
     def move_up(self):
         if(isface == "right" and forceFieldOn == False):
           self.image = spyral.image.Image(filename =
@@ -162,6 +179,13 @@ class Player(spyral.Sprite):
           "images/mainPlayerRedImages/RedPlayerShootingLaserLeftForceField.png",
            size = None)
         self.moving = 'up'
+        if self.moving == 'up':
+            global ProwNum
+        global PcolNum
+        if (BoardStatus[ProwNum][PcolNum] != -1):
+            if (ProwNum != -1):
+                    ProwNum-=1
+        self.y = BoardYcoord[ProwNum][PcolNum]
     def move_down(self):
         if(isface == "right" and forceFieldOn == False):
           self.image = spyral.image.Image(filename =
@@ -180,6 +204,13 @@ class Player(spyral.Sprite):
            "images/mainPlayerRedImages/RedPlayerShootingLaserLeftForceField.png",
             size = None)
         self.moving = 'down'
+        if self.moving == 'down':
+            global ProwNum
+        global PcolNum
+        if (BoardStatus[ProwNum][PcolNum] != -1):
+            if (ProwNum != 4):
+                    ProwNum+=1
+        self.y = BoardYcoord[ProwNum][PcolNum]
     def place_piece(self):
         self.moving = 'place_piece'
     def stop_move(self):
@@ -218,37 +249,6 @@ class Player(spyral.Sprite):
         self.x = BoardXcoord[ProwNum][PcolNum]
         self.y = BoardYcoord[ProwNum][PcolNum]
         paddle_velocity = 500
-        #print delta
-        if self.moving == 'left':
-            global ProwNum
-	    global PcolNum
-            #self.x -= paddle_velocity * delta
-	    if (BoardStatus[ProwNum][PcolNum] != -1):
-		if (PcolNum != 0):
-                    PcolNum-=1
-	    self.x = BoardXcoord[ProwNum][PcolNum]
-            #self.y = BoardYcoord[ProwNum][PcolNum]
-        elif self.moving == 'right':
-            global ProwNum
-	    global PcolNum
-	    if (BoardStatus[ProwNum][PcolNum] != -1):
-		if (PcolNum != 5):
-                    PcolNum+=1
-	    self.x = BoardXcoord[ProwNum][PcolNum]
-        elif self.moving == 'up':
-            global ProwNum
-	    global PcolNum
-	    if (BoardStatus[ProwNum][PcolNum] != -1):
-	        if (ProwNum != -1):
-                    ProwNum-=1
-            self.y = BoardYcoord[ProwNum][PcolNum]
-        elif self.moving == 'down':
-            global ProwNum
-	    global PcolNum
-	    if (BoardStatus[ProwNum][PcolNum] != -1):
-	        if (ProwNum != 4):
-                    ProwNum+=1
-            self.y = BoardYcoord[ProwNum][PcolNum]
         if (PcolNum == 6):
             PcolNum = 0
         if (ProwNum == 5):
@@ -279,7 +279,7 @@ class MathText(spyral.Sprite):
             #self.y -= HEIGHT/35
             self.image = spyral.Image(size=(1, 1))
         else:
-            self.image = font.render(str(answers[index]), WHITE)
+            self.image = font.render(str(answers[index]), GOLDEN)
         global BoardXcoord
         global BoardYcoord
         global Irow
@@ -383,13 +383,14 @@ class Enemy(spyral.Sprite):
 class Spaceship(spyral.Sprite):
 
     def __init__(self, scene):
-		global isSpaceShipSoundNeeded
-		spyral.Sprite.__init__(self, scene)
-		self.image = spyral.image.Image(filename ="images/spaceship/spaceshipRightmoving.png", size = None)
-		self.x = 0
-		self.y = HEIGHT/2
-		self.moving = False
-		spyral.event.register("director.update", self.update)
+        global isSpaceShipSoundNeeded
+        global minigame_timeout
+        spyral.Sprite.__init__(self, scene)
+        self.image = spyral.image.Image(filename ="images/spaceship/spaceshipRightmoving.png", size = None)
+        self.x = 0
+        self.y = HEIGHT/2
+        minigame_timeout = False
+        spyral.event.register("director.update", self.update)
     def update(self, delta):
     	global isSpaceShipSoundNeeded
         if gamestate == "minigame":
@@ -400,8 +401,10 @@ class Spaceship(spyral.Sprite):
                 SST = pygame.mixer.Sound("sounds/spaceShipTraveling.wav")
                 SST.play()
                 isSpaceShipSoundNeeded = False
-            if self.x<=WIDTH -100:
-                self.x +=5
+            if self.x<=WIDTH:
+                self.x +=1
+            else:
+                minigame_timeout = True
         else:
             self.x = WIDTH + 100
 
@@ -474,23 +477,34 @@ class AnswerCorrect(spyral.Sprite):
 class Question(spyral.Sprite):
     def __init__(self,scene):
         spyral.Sprite.__init__(self, scene)
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
-        self.x=WIDTH/2
-        self.y=HEIGHT/3
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
         # useless readering, but CANNOT delete it
-        self.image=font.render("Your Answer: ___")
+        self.image=font.render("Your Answer: ")
         self.done ='0'
         self.turn = 0
         self.correct = '0'
         self.a = 0
         self.b = 0
         self.answer = self.a + self.b
-        self.in_answer=0
-        self.dig_answer=0
-        self.answer = 5
+        self.in_answer = 0
+        self.in_answer_denominator = 0
+        if randomMiniGame == 1:
+            self.answer = 12
+            self.answer_denominator = 0
+        elif randomMiniGame == 2:
+            self.answer = 1413
+            self.answer_denominator = 0
+        elif randomMiniGame == 3:
+            self.answer = 3
+            self.answer_denominator = 0
+        elif randomMiniGame == 4:
+            self.answer = 5
+            self.answer_denominator = 8
         self.lock = False
         self.win = 'False'
-        spyral.event.register ("input.mouse.down.left",self.down_left)
+        self.hasSlash = False
         spyral.event.register ("input.keyboard.down.number_0",self.K0)
         spyral.event.register ('input.keyboard.down.number_1',self.K1)
         spyral.event.register ('input.keyboard.down.number_2',self.K2)
@@ -501,101 +515,156 @@ class Question(spyral.Sprite):
         spyral.event.register ('input.keyboard.down.number_7',self.K7)
         spyral.event.register ('input.keyboard.down.number_8',self.K8)
         spyral.event.register ('input.keyboard.down.number_9',self.K9)
-        spyral.event.register("input.keyboard.up."+"space", self.check_answer)
-        time.sleep(0.1)
+        spyral.event.register ('input.keyboard.down.slash',self.slash)
+        spyral.event.register("input.keyboard.down.return", self.check_answer)
 
-    def down_left(self, pos,button):
-        if self.win == 'False':
-            if(gamestate == 'minigame' ):
-                self.correct='0'
-                print "turn 1 question"
-                text=(self.question1+"____")
-                #text=("Nyasia always takes the same route when she walks her dog. First, she walks 7 blocks to the park. Then she walks 9 blocks to the elementary school. Finally, she walks12 blocks to get back home. Nyasia walks her dog 2 times each day. How many blocks does Nyasia's dog walk each day?")
-                font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
-                self.image=font.render(text)
-        else:
-            text=("CONGRATULATION!! " + self.win + "  WIN!!")
-            font=spyral.font.Font("fonts/white.ttf",50,(0,255,255))
-            self.image=font.render(text)
+ 
     def check_answer(self):
-        time.sleep(0.1)
-        if self.in_answer == self.answer and gamestate == "minigame" and self.lock:
+        global minigame_timeout
+        if self.in_answer == self.answer and self.in_answer_denominator == self.answer_denominator and gamestate == "minigame" and self.lock and minigame_timeout == False:
+            global gamestate
+            gamestate = "maingame"
+            self.x=300
+            self.y=200
             self.correct = '1'
             self.image=spyral.image.Image(filename = "images/feedback/Correct.png", size = None)
             self.in_answer=0
-        elif self.in_answer != self.answer and gamestate == "minigame" and self.lock:
+        elif self.in_answer != self.answer or self.in_answer_denominator != self.answer_denominator and gamestate == "minigame" and self.lock and minigame_timeout == False:
+            global gamestate
+            gamestate = "maingame"
+            self.x=300
+            self.y=200
             self.correct = '0'
             self.image=spyral.image.Image(filename = "images/feedback/wrong.png", size = None)
             self.in_answer=0
+    def slash(self):
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        self.hasSlash = True
+        self.in_answer = self.in_answer
+        text=("Your Answer: " + str(self.in_answer) +"/" + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
+        self.lock = True
+        self.image=font.render(text)
     def K0(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 0
-        text=("Your Answer: " + str(self.in_answer) + "  Press SPACE to check")
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+0
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 0
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
         self.image=font.render(text)
     def K1(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 1
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+1
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 1
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
         self.image=font.render(text)
     def K2(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 2
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+2
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 2
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
         self.image=font.render(text)
     def K3(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 3
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+3
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 3
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
         self.image=font.render(text)
     def K4(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 4
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+4
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 4
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
         self.image=font.render(text)
     def K5(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 5
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+5
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 5
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
         self.image=font.render(text)
     def K6(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 6
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+6
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 6
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
         self.image=font.render(text)
     def K7(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 7
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+7
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 7
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
         self.image=font.render(text)
     def K8(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 8
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+8
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 8
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
         self.image=font.render(text)
     def K9(self):
-        self.dig_answer = self.dig_answer+1
-        self.in_answer = self.in_answer*10 + 9
-        text=("Your Answer: " + str(self.in_answer) + "  Press Space to check")
+        self.x=WIDTH/5
+        self.y=HEIGHT*2/3
+        if self.hasSlash:
+            self.in_answer_denominator = self.in_answer_denominator*10+9
+            text=("Your Answer: " + str(self.in_answer) + "/" +str(self.in_answer_denominator) + "  Press ENTER to check")
+        else:
+            self.in_answer = self.in_answer*10 + 9
+            text=("Your Answer: " + str(self.in_answer) + "  Press ENTER to check")
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.lock = True
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
         self.image=font.render(text)
 
 class BlackHole(spyral.Sprite):
@@ -619,7 +688,7 @@ class TempText(spyral.Sprite):
     def __init__(self,scene, txt, y):
         spyral.Sprite.__init__(self, scene)
         text=txt
-        font=spyral.font.Font("fonts/white.ttf",30,(255,255,255))
+        font=spyral.font.Font("fonts/Bite_Bullet.ttf",50,GOLDEN)
         self.image=font.render(text)
         self.anchor = "center"
         self.x = WIDTH/3
@@ -652,7 +721,7 @@ class CaptainMath(spyral.Scene):
         spyral.event.register("input.keyboard.down.t", self.asorbAnswer)
         spyral.event.register("input.keyboard.down.f", self.forceFieldOn)
         spyral.event.register("input.mouse.down.left", self.down_left)
-        spyral.event.register("input.keyboard.down.return", self.return_clicked)
+        #spyral.event.register("input.keyboard.down.return", self.return_clicked)
         #spyral.event.register("input.keyboard.down.j", self.killmath)
 
         # build coordinate matrix so that a cell(a,b) of the board
@@ -671,6 +740,7 @@ class CaptainMath(spyral.Scene):
         self.mY = pos[1]
         print pos, button
         global gamestate
+        global randomMiniGame
         if(gamestate == "StartScreen" and pos[0] >= 500 and pos[0] <= 700 and pos[1] >=340 and pos[1] <= 450 ):
 			#gamestate = "Levelselect"
             #print "gamestate = Levelselect"
@@ -731,54 +801,75 @@ class CaptainMath(spyral.Scene):
                     n.animate(self.animation_y)
                     delta_iteration -= 50
         elif(gamestate == "story"):
+            global isTransportSoundNeeded
             for i in self.text_objects:
                 i.kill()
             gamestate = "Levelselect"
+            isTransportSoundNeeded = True
             print "gamestate = Levelselect"
-            self.arrow = Arrow(self)
-        elif(gamestate == "levelCleared"):
-            gamestate = "Levelselect"
-            self.arrow = Arrow(self)
-            global currentLevel
-            currentLevel+=1
-            #isSpaceShipSoundNeeded = True
-            #self.spaceship.x = 0
-            #self.spaceship.y = HEIGHT/2
-            #self.question.x = 0
-            #self.TempText1 = TempText(self)
-        
-		    
-    def return_clicked(self):
-        global gamestate
-        global isSpaceShipSoundNeeded
-        if(gamestate == "Levelselect" and self.arrow.level <=4):
-            self.background = spyral.Image("images/Backgrounds/galaxybg.jpg")
+            #self.arrow = Arrow(self)
+        elif(gamestate == "Levelselect"):# and self.arrow.level <=4):
+            randomMiniGame = random.randint(1,4)
+            self.background = spyral.Image("images/preMadeImages/miniGameQuestion"+ str(randomMiniGame) +".png")
+            self.tempTexts = []
+            '''''
             world_problem_array = ["Ronnie has 10 dollar,", "the price of an apple is 2 dollar,", 
             "how many apples she can buy?"]
             y = 100
-            self.tempTexts = []
+            
             for i in world_problem_array:
                 self.tempText1 = TempText(self, i, y)
                 self.tempTexts.append(self.tempText1)
                 y += 50
-
-            self.question = Question(self)
-            print "gamestate = minigame"
-            self.arrow.level = 5
+            '''''
             self.spaceship = Spaceship(self)
+            self.question = Question(self)
             gamestate = "minigame"
+            print "gamestate = minigame"
             isSpaceShipSoundNeeded = True
             #pygame.mixer.init()
             #SSF = pygame.mixer.Sound("sounds/spaceShipFlying.wav")
             #SSF.play()
             #SST = pygame.mixer.Sound("sounds/spaceShipTraveling.wav")
             #SST.play()
-        elif(gamestate == "minigame"):# and self.question.correct == '1'):
+        elif(gamestate == "levelCleared"):
+            gamestate = "maingame"
+            #self.arrow = Arrow(self)
+            global currentLevel
+            global currentPlanet
+            global isTransportSoundNeeded
+            global isGameEnd
+            self.spaceship.minigame_timeout = False
+            currentLevel+=1
+            if (currentLevel>2): # 2 level for each planet. (will be changed to 3)
+                gamestate = "Levelselect"
+                isTransportSoundNeeded = True
+                currentLevel = 1
+                currentPlanet+=1
+                if (currentPlanet == 5):
+                    gamestate = "end"
+                    isGameEnd = True
+            #isSpaceShipSoundNeeded = True
+            #self.spaceship.x = 0
+            #self.spaceship.y = HEIGHT/2
+            #self.question.x = 0
+            #self.TempText1 = TempText(self)
+        #elif (gamestate == "end"):
+        #    self.tempText2 = TempText(self, "YOU SAVED THE uNIVERSE!!", 400)
+		    
+    #def return_clicked(self):
+        
+        
+        elif(gamestate == "maingame"):# and self.question.correct == '1'):
+            global gamestate
+            global isSpaceShipSoundNeeded
+            print "currentLevel: " + str(currentLevel)
+            print "currentPlanet: " + str(currentPlanet)
             for i in self.tempTexts:
                 i.kill()
             self.spaceship.kill()
             self.question.kill()
-            self.arrow.kill()
+            #self.arrow.kill()
             global SST
             global SSF
             global isSpaceShipSoundNeeded
@@ -790,6 +881,8 @@ class CaptainMath(spyral.Scene):
             global didCollideWithBlackHole
             global laserCount
             global playerLives
+            global enemyCollided
+            enemyCollided = False
             laserCount = 3
             playerLives = 2
             isBlackholeSet = False
@@ -818,7 +911,7 @@ class CaptainMath(spyral.Scene):
             self.spaceShipLife2.x = 1200 - (self.spaceShipLife1.width*2)
             self.spaceShipLife2.y = 0
             #generate math problem (27 answers needed, because there are 3 asteroids)
-            problem = generatesMultiplesProblems(27, 2)
+            problem = generatesMultiplesProblems(27, currentLevel)
             #problem2 = generatesMultiplesProblems(27, 2)
             #print "rrrrrrrrrrrrrrrrrrr"
             #for rans in problem2.right_answers:
@@ -1182,6 +1275,8 @@ class CaptainMath(spyral.Scene):
         global isBlackholeSet
         global CorrectAnswers
         global CorrectAnswersList
+        global isTransportSoundNeeded
+        global isGameEnd
         #print "how many correct answers?? " , CorrectAnswers
 
         if gamestate == "StartScreen":
@@ -1192,7 +1287,36 @@ class CaptainMath(spyral.Scene):
 				SSTheme.play()
 				gameStarted = True
         elif gamestate == "Levelselect":
-            self.background = spyral.Image("images/preMadeImages/PlanetMap.png")
+            if (currentPlanet == 1):
+                self.background = spyral.Image("images/preMadeImages/PlanetMap.png")
+            elif (currentPlanet == 2):
+                self.background = spyral.Image("images/preMadeImages/goingToFractoidPlanet.png")
+                if(isTransportSoundNeeded == True):
+                    pygame.mixer.init()
+                    nextPlanetSound = pygame.mixer.Sound("sounds/flyToNextMission.wav")
+                    nextPlanetSound.play()
+                    isTransportSoundNeeded = False
+            elif (currentPlanet == 3):
+                self.background = spyral.Image("images/preMadeImages/goingToAlgebraXPlanet.png")
+                if(isTransportSoundNeeded == True):
+                    pygame.mixer.init()
+                    nextPlanetSound = pygame.mixer.Sound("sounds/flyToNextMission.wav")
+                    nextPlanetSound.play()
+                    isTransportSoundNeeded = False
+            elif (currentPlanet == 4):
+                self.background = spyral.Image("images/preMadeImages/goingToZardashPlanet.png")
+                if(isTransportSoundNeeded == True):
+                    pygame.mixer.init()
+                    nextPlanetSound = pygame.mixer.Sound("sounds/flyToNextMission.wav")
+                    nextPlanetSound.play()
+                    isTransportSoundNeeded = False
+        elif gamestate == "end":
+            self.background = spyral.Image("images/entireScenes/youWin.png")
+            if(isGameEnd == True):
+                pygame.mixer.init()
+                youWinTheme = pygame.mixer.Sound("sounds/youWin.wav")
+                youWinTheme.play()
+                isGameEnd = False
         elif gamestate == "fullLevels":
             #print "is the black hole set?? ", isBlackholeSet
             global didCollideWithBlackHole
@@ -1267,7 +1391,7 @@ class CaptainMath(spyral.Scene):
                 for i in self.text_objects:
                     i.kill()
                 gamestate = "Levelselect"
-                self.arrow = Arrow(self)
+                #self.arrow = Arrow(self)
                 print "gamestate = Levelselect"
         """elif gamestate =="tutorial":
             if self.TutorialCount == 1:
